@@ -2,7 +2,10 @@
 <html>
 <body>
 
-<img id="body" src="./body.png" 
+  <img id="body" src="./body.png" 
+  style="position: absolute;left: 0pt;top: 120pt; z-index: 10; width: 250pt; display: none">
+
+  <img id="bananas" src="./bananas.JPG" 
 style="position: absolute;left: 0pt;top: 120pt; z-index: 10; width: 250pt; display: none">
 
 <img id="hat" src="./hat.png" 
@@ -24,6 +27,7 @@ style="position: absolute;left: 210pt;top: 150pt; z-index: 20; width: 150pt; dis
 style="border:1px solid #d3d3d3;"></canvas>
 
 <p><button onclick="go()">Try it</button></p>
+<p><button onclick="minus()">-</button> <button onclick="plus()">+</button></p>
 
 <script>
 let x1, x2, s1, s2, interval
@@ -54,19 +58,27 @@ let left_leg
 let right_leg
 let tail
 let wind
+let bananas
 let all
 let cycle = 5
 
 function createSprites() {
-  body = new Sprite("body",0, 40, 250, 270, x => x - 1)
-  hat = new Sprite("hat", 65, 0, 100, 100, x => x - 1)
-  left_leg = new Sprite("leg-left", 200, 228, 120, 300, x => x - 1, 
+  body = new Sprite("body",0, 40, 250, 270, 
+    x => x + dinosaurSpeed)
+  hat = new Sprite("hat", 65, 0, 100, 100, 
+    x => x + dinosaurSpeed)
+  left_leg = new Sprite("leg-left", 200, 228, 120, 300, 
+    x => x + dinosaurSpeed, 
     y => { return y + cycle - 5 })
-  right_leg = new Sprite("leg-right", 100, 220, 100, 300, x => x - 1, 
+  right_leg = new Sprite("leg-right", 100, 220, 100, 300,
+    x => x  + dinosaurSpeed, 
     y => { return y - (cycle - 5) })
-  tail = new Sprite("tail", 225, 220, 150, 80, x => x - 1)
-  wind = new Sprite("wind", -370, 70, 150, 100, x => x + 1)
-  all = [left_leg, body, hat, right_leg, tail, wind]
+  tail = new Sprite("tail", 225, 220, 150, 80, 
+    x => x  + dinosaurSpeed)
+  wind = new Sprite("wind", -370, 70, 150, 100, 
+    x => x + 2)
+  bananas = new Sprite("bananas", -900, 100, 50, 50)
+  all = [left_leg, body, hat, right_leg, tail, wind, bananas]
 }
 
 function myCanvas() {
@@ -75,23 +87,56 @@ function myCanvas() {
   ctx.drawImage(img,x2 -= s2,100,100,100)
 }
 
+let hatFallStep, hatLoose, dinosaurSpeed
+
+function whenWindWentPastBody() {
+  hatLoose = true
+    hat.yFunction = y => {
+      if (y > 400) return 400
+      y += hatFallStep
+      hatFallStep *= 1.2
+      return y
+    }
+    hat.xFunction = x => x
+}
+
+function whenDinosaurEatsBananas() {
+  bananas.eaten = true
+  all = all.filter(e => e != bananas)
+}
+
+function evaluateWorld() {
+  // wind goes past the body
+  if (!hatLoose && wind.x >= body.x) {
+    whenWindWentPastBody()
+  }
+  // has the dinosaur touched the bananas?
+  if (body.x <= (bananas.x + 50)) {
+    whenDinosaurEatsBananas()
+  }
+}
+
 function move() {
   ctx.clearRect(0, 0, c.width, c.height)
   cycle++
   cycle %= 11
-  if (wind.x >= body.x) {
-    hat.yFunction = y => y < 400 ? y + 5 : y
-  }
+  evaluateWorld()
   all.forEach(element => {
     element.tick()
+  })
+  all.forEach(element => {
     element.show()
   });
 }
 
 function go () {
+  hatFallStep = 1
+  hatLoose = false
+  dinosaurSpeed = -1
   c = document.getElementById("myCanvas");
   ctx = c.getContext("2d");
   createSprites()
+  bananas.eaten = false
 
   all.forEach(element => {
     element.x += 900
@@ -101,6 +146,13 @@ function go () {
 	interval = window.setInterval(move, 50)
 }
 
+function plus() {
+  dinosaurSpeed++
+}
+
+function minus() {
+  dinosaurSpeed--
+}
 
 </script>
 
